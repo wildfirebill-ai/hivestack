@@ -26,8 +26,9 @@ jobs:
     name: Repo + image vulnerability scan
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write # auto-commit vulnerabilities.md to the repo
       security-events: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
 
@@ -110,6 +111,23 @@ jobs:
         if: always()
         run: |
           python .github/scripts/aggregate_vulns.py reports > vulnerabilities.md
+
+      # ---- commit vulnerabilities.md to the repo (main) -------------------
+      # Not on pull_request (can't push to the base branch); on others it's
+      # committed directly so the file shows up in the file browser.
+      - name: Commit vulnerabilities.md
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vulnerabilities.md
+          if git diff --cached --quiet; then
+            echo "No changes to vulnerabilities.md — skipping commit."
+          else
+            git commit -m "docs: update vulnerability scan report"
+            git pull --rebase --autostash
+            git push
+          fi
 
       - name: Show summary
         if: always()
