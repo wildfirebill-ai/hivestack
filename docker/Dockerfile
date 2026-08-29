@@ -10,6 +10,14 @@ RUN npm run build
 FROM python:3.12-slim
 WORKDIR /app
 
+# Patch OS packages in the base image (e.g. OpenSSL) so the image isn't shipping
+# known CVEs. apk-free: this is Debian, use apt. Keep it to update/upgrade +
+# cleanup only (no extra packages) to stay slim.
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* /var/tmp/*
+
 ENV PYTHONPATH=/app/backend \
     HIVESTACK_CONFIG_DIR=/config \
     HIVESTACK_DATA_DIR=/data \
@@ -19,7 +27,9 @@ ENV PYTHONPATH=/app/backend \
     PYTHONUNBUFFERED=1
 
 COPY backend/requirements.txt /app/backend/requirements.txt
-RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+# Upgrade pip first so the Python base image's known-vulnerable pip is replaced.
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r /app/backend/requirements.txt
 # pre-cache the offline embedding model so RAG works with zero network at runtime
 RUN python -c "from fastembed import TextEmbedding; TextEmbedding('sentence-transformers/all-MiniLM-L6-v2', cache_dir='/opt/hivestack-models/embed')" \
     && echo "[hivestack] embed model cached"
