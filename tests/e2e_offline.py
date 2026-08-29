@@ -170,9 +170,14 @@ def main() -> int:
         def agent():
             r = client.post("/api/agents/tasks", headers=H(t), json={"goal": "compute", "max_steps": 2, "allowed_scopes": ["low"]})
             rid = r.json()["id"]
-            time.sleep(2.5)
-            d = client.get(f"/api/agents/tasks/{rid}", headers=H(t)).json()
-            assert d["status"] in ("error", "budget_capped"), d.get("status")
+            st = None
+            for _ in range(40):
+                d = client.get(f"/api/agents/tasks/{rid}", headers=H(t)).json()
+                st = d.get("status")
+                if st in ("error", "budget_capped", "completed"):
+                    break
+                time.sleep(0.5)
+            assert st in ("error", "budget_capped"), st
             ver = client.post(f"/api/governance/verify/{rid}", headers=H(t), json={})
             assert ver.status_code == 200
         check("agents: run lifecycle + verify gate", agent)
@@ -227,7 +232,7 @@ def main() -> int:
         check("studio: publish approval → outbox", pub)
 
         ctrl = client.get("/health")
-        ctrl.ok
+        assert ctrl.status_code == 200
         proc.terminate()
         try:
             proc.wait(timeout=10)

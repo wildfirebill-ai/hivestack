@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Iterator
 
 from ..config import settings
-from ..providers import require_allowed
 from .anthropic import AnthropicAdapter
 from .base import ChatAdapter, InferenceError
 from .gemini import GeminiAdapter
@@ -25,6 +24,25 @@ def get_adapter(provider_name: str) -> ChatAdapter:
     if adapter is None:
         raise InferenceError(f"no inference adapter for provider '{provider_name}'", 400)
     return adapter
+
+
+def _gate_required(name: str) -> None:
+    """Reject a gated provider up front — cloud while offline, or disabled.
+
+    Raises InferenceError(403) so both the chat route and the agent runtime
+    surface the refusal cleanly instead of `resolve_target` silently falling
+    back to a reachable local model.
+    """
+    prov = settings.get_provider(name)
+    if prov is None:
+        raise InferenceError(f"unknown provider '{name}'", 404)
+    if not settings.provider_is_allowed(name):
+        reason = "offline mode is on" if settings.offline_mode else "provider is disabled"
+        raise InferenceError(f"provider '{name}' not allowed: {reason}", 403)
+
+
+def _gate(candidate: dict) -> None:
+    _gate_required(candidate["provider"])
 
 
 def resolve_target(provider: str | None, model: str | None) -> tuple[dict, dict]:
@@ -47,6 +65,10 @@ def resolve_target(provider: str | None, model: str | None) -> tuple[dict, dict]
         candidate = entry
     else:
         prov_name = (provider or settings.default_provider or "ollama").lower()
+        # Gate the *requested* provider first. If a cloud provider is asked for
+        # while offline (or disabled), refuse 403 now — never silently redirect
+        # the call to an allowed local engine.
+        _gate_required(prov_name)
         candidates = [
             m for m in settings.models()
             if m.get("provider") == prov_name and m.get("enabled", True)
@@ -65,9 +87,9 @@ def resolve_target(provider: str | None, model: str | None) -> tuple[dict, dict]
         candidate = candidates[0]
 
     # gate: local engines are always allowed; clouds need offline=off + switch on
-    require_allowed(candidate["provider"])
+    _gate(candidate)
     provider_cfg = settings.get_provider(candidate["provider"])
-    assert provider_cfg is not None  # require_allowed already validated presence
+    assert provider_cfg is not None  # _gate already validated presence
     return provider_cfg, candidate
 
 

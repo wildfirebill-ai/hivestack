@@ -3,7 +3,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: hivestack:0.1.0
+    image: "hivestack:${HIVESTACK_IMAGE_VERSION:-0.1.0}"
     container_name: hivestack
     restart: unless-stopped
     ports:

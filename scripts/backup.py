@@ -12,6 +12,12 @@ import sys
 import zipfile
 from pathlib import Path
 
+# Guard against cp1252 stdout on Windows so the "→" in restore logs never crashes.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 
 def archive(data: Path, config: Path, out: Path) -> Path:
     data = data.expanduser().resolve()

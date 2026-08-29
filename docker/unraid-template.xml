@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  hivestack — Unraid Community Applications template (Stage 1).
-  TODO before publishing: set <Registry>/<Repository> to the real image location
-  (e.g. ghcr.io/<org>/hivestack:latest), fill Support/Icon/Beta, and mark architecture.
+  hivestack — Unraid Community Applications template.
+  Published from the wildfirebill-ai/hivestack repo. Update the image tag to
+  match the released version; <Repository>:latest tracks release builds.
 -->
 <XML>
   <Category>Productivity:AITools</Category>
@@ -12,19 +12,20 @@
 
 Features
 - Local-first: runs fully offline; every outside provider (OpenAI/Anthropic/Gemini/...) ships with its own enable switch
-- Web UI: dashboard, chat, settings (provider &amp; module toggles, GPU status)
+- Web UI: dashboard, chat, agents, workflows, boards, memory, skills, studio, comms, AIOps, governance, economy, settings
 - Single container: API + UI; persistent /config /data /models volumes
 - M40-ready: CC 5.2 (Ollama/llama.cpp, driver branch 580)
 
 Parameters: set a strong admin password and (optionally) the GPU UUID.</Description>
-  <Registry>ghcr.io/EXAMPLE/hivestack</Registry>
-  <Repository>ghcr.io/EXAMPLE/hivestack:latest</Repository>
-  <Support>https://github.com/EXAMPLE/hivestack</Support>
+  <Registry>ghcr.io/wildfirebill-ai/hivestack</Registry>
+  <Repository>ghcr.io/wildfirebill-ai/hivestack:latest</Repository>
+  <Support>https://github.com/wildfirebill-ai/hivestack</Support>
   <Beta>false</Beta>
   <Requires>Nvidia</Requires>
   <BaseVar>NAME</BaseVar>
   <Privileged>false</Privileged>
-  <Overview>hivestack ships the Web UI and API in one container. Volumes are optional until Stage 2 (models), but always mount config+data for persistence.</Overview>
+  <Icon>https://raw.githubusercontent.com/wildfirebill-ai/hivestack/main/icon.png</Icon>
+  <Overview>hivestack ships the Web UI, API, and offline AIOps loop in one container. Mount /config, /data, and /models for persistence; attach the M40 for local inference via the optional Ollama sidecar.</Overview>
 
   <Config Name="Web UI Port" Target="8080" Default="8080" Mode="tcp" Description="Web UI and API port" Type="Port" Display="always" Required="true" Mask="false"/>
   <Config Name="Config path" Target="/config" Default="/mnt/user/appdata/hivestack/config" Mode="rw" Description="Persistent config (config.yaml seeded on first boot)" Type="Path" Display="always" Required="true" Mask="false"/>

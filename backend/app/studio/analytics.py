@@ -137,10 +137,20 @@ def normalize_logs(lines: list[str]) -> dict:
 
 # ------------------------------------------------------------------ anomaly detection
 def detect_zscore(points: list[float], threshold: float = 3.0) -> list[int]:
+    """Flag points whose deviation from a ROBUST centre (median/MAD) exceeds
+    `threshold`. Mean/std z-scores get swamped when a series is bimodal (e.g. an
+    isolated spike cluster vs a baseline cluster), hiding real outliers; median +
+    median-absolute-deviation is robust to that while behaving like a classic
+    z-score on normal data."""
     arr = np.asarray(points, dtype=np.float64)
-    if arr.size < 3 or np.std(arr) == 0:
+    if arr.size < 3:
         return []
-    z = np.abs((arr - np.mean(arr)) / np.std(arr))
+    med = float(np.median(arr))
+    mad = float(np.median(np.abs(arr - med)))
+    if mad == 0:
+        # all-identical values, or limited sample; fall back to no flagging
+        return []
+    z = 0.6745 * np.abs(arr - med) / mad
     return [int(i) for i, v in enumerate(z) if v > threshold]
 
 

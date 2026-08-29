@@ -4,7 +4,7 @@ Local-first AI agent / AIOps platform. Runs fully offline on a Tesla M40 (Maxwel
 ships as a single Unraid Docker app, and drives everything through a Web UI. Every outside
 provider sits behind its own **off switch** — local-only by default.
 
-> Status: **Stage 11 — Economy, Identity & Federation done (experimental)**. Next: **Stage 12 — Distro & Hardening**.
+> Status: **Stage 12 — Distro & Hardening (in progress)**. Stages 0-11 complete. Offline e2e green; release/backup/restore + Unraid template ready for first publish.
 
 ## What works today
 
@@ -74,6 +74,27 @@ AIOps fault→approve→verify, governance budget/RBAC, economy escrow, and stud
 > a stale server/bytecode is serving an older build — kill any leftover uvicorn bound to the port
 > (and clear `backend/app/routers/__pycache__`) before re-running.
 
+## Release, backup & restore
+
+The current version lives in `VERSION` (source of truth), echoed in the image tag. Cut and push a
+release to GitHub Container Registry:
+
+```bash
+./scripts/build.sh        # build hivestack:<version> + :latest locally
+./scripts/release.sh      # build + tag + push ghcr.io/wildfirebill-ai/hivestack:<version> and :latest
+./scripts/release.sh --no-push    # just build locally
+# then cut the matching tag when you're ready:
+git tag -a v$(cat VERSION) -m "Release v$(cat VERSION)" && git push origin v$(cat VERSION)
+```
+
+Back up / restore data + config with the dated-zip tool (also push-button from `scripts/backup.*`):
+
+```bash
+python scripts/backup.py --data /data --config /config --out ./backups     # write
+python scripts/backup.py --verify ./backups/hivestack-backup-<ts>.zip       # check
+python scripts/backup.py --restore ./backups/hivestack-backup-<ts>.zip --dest ./restore
+```
+
 ## Docker / Unraid
 
 ```bash
@@ -103,7 +124,7 @@ GPU sanity check: `./scripts/check-m40.sh` (should list the M40, CC 5.2).
 | 9 | AIOps module | ✅ |
 | 10 | Governance, security & observability | ✅ |
 | 11 | Economy, identity & federation (experimental) | ✅ |
-| 12 | Distro & hardening | next |
+| 12 | Distro & hardening | in progress |
 
 ## Chatting with a real model
 

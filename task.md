@@ -149,6 +149,29 @@ Owner: agent + human at each Stage gate. Master plan: `../PLAN.md`.
 
 ## Stage 12 (next) — Distro & Hardening
 
+### Unraid community-app template
+- [x] `docker/unraid-template.xml` — real registry `ghcr.io/wildfirebill-ai/hivestack`, support link, icon, ports/volumes/GPU/params, overview
+- [x] App icon (`icon.png`)
+- [~] Register template with the Unraid CA repo once a real registry image is pushed
+
+### Backup / restore
+- [x] `scripts/backup.py` — backup/verify/restore dated zip (data + config), UTF-8-safe logs
+- [x] `scripts/backup.ps1` / `backup.sh` launchers
+
+### Offline end-to-end suite
+- [x] `tests/e2e_offline.py` — 14/14 green (health, gate-403, chat fallback, memory, skills, docs, comms, workflow, agents, aiops, governance, economy, studio)
+- [x] `scripts/test-offline.ps1` / `test-offline.sh`
+- [x] Hardening fixes: cloud-while-offline → 403 (no silent local fallback); robust MAD anomaly detection; AIOps demo baseline seeding; agents `verify` import fix; cp1252 stdout guards in suite + backup
+
+### Versioned release
+- [x] `VERSION` (0.1.0) + `CHANGELOG.md`; build scripts tag from `VERSION`
+- [x] `scripts/release.sh` — build + push `ghcr.io/wildfirebill-ai/hivestack:<v>` + `:latest`
+- [ ] Cut release tag `v0.1.0` and push the GHCR image
+
+### Docs & exit
+- [x] README — install, offline e2e, backup/restore, release docs
+- [ ] Exit: clean install on a fresh Unraid box with M40; all green (needs a Docker/Unraid host)
+
 ## Notes
 - Local dev port is 8110 (8000 is reserved by Windows kernel on this machine).
 - M40 CC 5.2 → Ollama/llama.cpp only; vLLM excluded (needs CC 7.5+). Driver branch 580 for Maxwell on Unraid.

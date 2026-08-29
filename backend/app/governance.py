@@ -215,7 +215,7 @@ def security_review() -> dict:
 
 # ------------------------------------------------------------------ verification gate
 def verify_run(run_id: str) -> dict:
-    from ..agents import runtime as _ar
+    from .agents import runtime as _ar
 
     detail = _ar.task_detail(run_id)
     if detail is None:

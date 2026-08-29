@@ -68,7 +68,8 @@ def start(target: str, fault_type: str = "latency", duration_s: int = 12, severi
 
     threading.Thread(target=_run, daemon=True, name=f"chaos-{run_id}").start()
     return {"run_id": run_id, "target": target, "fault_type": fault_type,
-            "metric": metric, "duration_s": duration_s}
+            "metric": metric, "duration_s": duration_s,
+            "baseline": cfg["baseline"], "spike": cfg["faults"][fault_type]}
 
 
 def stop(run_id: str) -> bool:

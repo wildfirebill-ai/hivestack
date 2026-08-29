@@ -4,15 +4,36 @@ Then `approve_remediation` stops the fault and verifies recovery (exit criteria)
 
 from __future__ import annotations
 
+import random
 import time
 
+from ..db import _conn
 from . import chaos as _chaos
 from . import core as _core
+
+_BASELINE_POINTS = 8
+
+
+def _seed_baseline(metric: str, baseline: float) -> None:
+    """Write a short known-good baseline window for the metric so the detector
+    can compare the injected spike against it (a window that is entirely in the
+    fault state looks 'normal' and is never flagged)."""
+    with _conn() as con:
+        for _ in range(_BASELINE_POINTS):
+            noise = random.uniform(-0.15, 0.15) * baseline
+            con.execute(
+                "INSERT INTO telemetry_points(ts, name, value)"
+                " VALUES (strftime('%Y-%m-%dT%H:%M:%fZ','now'),?,?)",
+                (metric, float(baseline + noise)),
+            )
+            time.sleep(0.1)
 
 
 def run(target: str = "web-api", fault_type: str = "latency", duration_s: int = 12) -> dict:
     start = _chaos.start(target, fault_type, duration_s=duration_s)
     metric = start["metric"]
+    baseline = start["baseline"]
+    _seed_baseline(metric, baseline)
     time.sleep(2.5)
 
     det = _core.detect(metric, minutes=1, method="hybrid")

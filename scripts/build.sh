@@ -3,4 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-docker build -f docker/Dockerfile -t hivestack:0.1.0 .
+VERSION="$(tr -d '[:space:]' < VERSION)"
+docker build -f docker/Dockerfile -t "hivestack:${VERSION}" .
+echo "[hivestack] built hivestack:${VERSION}  (aliased hivestack:latest)"
+docker tag "hivestack:${VERSION}" hivestack:latest
