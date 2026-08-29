@@ -1,0 +1,159 @@
+# hivestack default configuration.
+# Runtime file lives at $HIVESTACK_CONFIG_DIR/config.yaml (volume /config in Docker).
+# Local ("local") engines are always usable; "cloud" providers require:
+#   offline_mode == false  AND  provider.enabled == true  AND  key present.
+global:
+  offline_mode: true   # global kill-switch for every outside provider
+  log_level: info
+  default_provider: ollama
+  default_model: ""    # empty = first enabled model on the default provider
+  infer_timeout_seconds: 120
+
+server:
+  host: 0.0.0.0
+  port: 8080
+
+auth:
+  admin_user: admin   # HIVESTACK_ADMIN_USER overrides
+  # password comes from HIVESTACK_ADMIN_PASSWORD (dev default: "hivestack")
+
+providers:
+  ollama:
+    type: local
+    enabled: true
+    base_url: http://127.0.0.1:11434
+    note: bundled local engine (stage 2 wiring); HIVESTACK_OLLAMA_URL overrides url
+  openai:
+    type: cloud
+    enabled: false
+    base_url: https://api.openai.com/v1
+    key_env: HIVESTACK_OPENAI_KEY
+  anthropic:
+    type: cloud
+    enabled: false
+    base_url: https://api.anthropic.com/v1
+    key_env: HIVESTACK_ANTHROPIC_KEY
+  gemini:
+    type: cloud
+    enabled: false
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    key_env: HIVESTACK_GEMINI_KEY
+
+# Feature modules register on the bus. Module code arrives in later stages;
+# toggles are live and gate their respective endpoints.
+# Feature modules register on the bus. Module code arrives in later stages;
+# toggles are live and gate their respective endpoints.
+# Feature modules register on the bus. Module code arrives in later stages;
+# toggles are live and gate their respective endpoints.
+modules:
+  chat: true
+  agents: true
+  workflow: true
+  memory: true
+  skills: true
+  docs: true
+  media: true
+  voice: true
+  aiops: true
+  governance: true
+  economy: false
+
+# Experimental federation peers (Stage 11) — optional, off by default.
+peers: {}
+
+# Model registry — one row per model. `provider` must match a provider above.
+# Configured model sizes target the 24 GB Tesla M40 (Q4/Q8 GGUF, full GPU).
+models:
+  - name: llama-3.1-8b
+    provider: ollama
+    model_id: llama3.1:8b
+    family: llama
+    context: 8192
+    enabled: true
+    notes: M40-friendly 8B Q4 — fast, good default
+  - name: qwen2.5-7b
+    provider: ollama
+    model_id: qwen2.5:7b
+    family: qwen
+    context: 32768
+    enabled: true
+    notes: strong small general model, long context
+  - name: qwen2.5-13b
+    provider: ollama
+    model_id: qwen2.5:13b
+    family: qwen
+    context: 32768
+    enabled: false
+    notes: 13B Q4 fits 24GB at moderate context
+  - name: claude-haiku
+    provider: anthropic
+    model_id: claude-3-5-haiku-latest
+    family: claude
+    context: 200000
+    enabled: false
+    notes: opt-in cloud provider
+  - name: gpt-4o-mini
+    provider: openai
+    model_id: gpt-4o-mini
+    family: openai
+    context: 128000
+    enabled: false
+    notes: opt-in cloud provider
+  - name: gemini-flash
+    provider: gemini
+    model_id: gemini-1.5-flash
+    family: gemini
+    context: 1000000
+    enabled: false
+    notes: opt-in cloud provider
+
+# External MCP servers to expose to agents (optional).
+# stdio local:      name: {command: npx, args: ["-y","@modelcontextprotocol/server-filesystem","/tmp"]}
+# streamable http:  name: {url: "http://127.0.0.1:8001/mcp"}
+# hivestack itself can act as a server: python -m app.mcp_server_entry
+mcp_servers: {}
+
+# Governance: RBAC + budgets + immutable audit.
+governance:
+  enabled: true
+  budget_enabled: true
+  daily_token_budget: 500000        # token cap across all model calls per day
+  per_run_token_limit: 120000       # max tokens a single agent run may spend
+  cost_per_1k_in: 0.0               # $ / 1k input tokens (0 = budget counts tokens only)
+  cost_per_1k_out: 0.0
+
+# Communication channels (opt-in; each requires enabled=true and, for live
+# external platforms, offline_mode=false + a token in the named env var).
+# platform: webhook | email | telegram | discord | slack | matrix
+channels:
+  webhook:
+    enabled: true
+    platform: webhook
+    trigger_workflow: ""
+  mail:
+    enabled: true
+    platform: email
+    trigger_workflow: ""
+  telegram:
+    enabled: false
+    platform: telegram
+    token_env: HIVESTACK_TELEGRAM_TOKEN
+  discord:
+    enabled: false
+    platform: discord
+    token_env: HIVESTACK_DISCORD_TOKEN
+  slack:
+    enabled: false
+    platform: slack
+    token_env: HIVESTACK_SLACK_TOKEN
+  matrix:
+    enabled: false
+    platform: matrix
+    token_env: HIVESTACK_MATRIX_TOKEN
+
+# Prompt studio — named system prompts selectable per chat.
+prompts:
+  default:
+    system: >-
+      You are hivestack, a local-first AI assistant running on the user's own
+      hardware. Be concise, accurate, and honest about what you can do.

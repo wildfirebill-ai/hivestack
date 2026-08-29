@@ -1,0 +1,48 @@
+services:
+  hivestack:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: hivestack:0.1.0
+    container_name: hivestack
+    restart: unless-stopped
+    ports:
+      - "${HIVESTACK_PORT:-8080}:8080"
+    volumes:
+      - ${HIVESTACK_CONFIG_DIR:-./config}:/config
+      - ${HIVESTACK_DATA_DIR:-./data}:/data
+      - ${HIVESTACK_MODELS_DIR:-./models}:/models
+    environment:
+      HIVESTACK_ADMIN_USER: ${HIVESTACK_ADMIN_USER:-admin}
+      HIVESTACK_ADMIN_PASSWORD: ${HIVESTACK_ADMIN_PASSWORD:-changeme}
+      # point the local engine at the Ollama sidecar (same compose network)
+      HIVESTACK_OLLAMA_URL: http://hivestack-ollama:11434
+      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Local inference engine (wired in Stage 2). Optional sidecar; needs the
+  # NVIDIA container runtime. Enable with: docker compose --profile gpu up
+  ollama:
+    image: ollama/ollama:0.5
+    container_name: hivestack-ollama
+    restart: unless-stopped
+    profiles: ["gpu"]
+    volumes:
+      - ${HIVESTACK_MODELS_DIR:-./models}/ollama:/root/.ollama
+    environment:
+      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
