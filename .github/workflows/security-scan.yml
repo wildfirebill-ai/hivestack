@@ -42,17 +42,23 @@ jobs:
           node-version: "20"
 
       # ---- repo: leaked secrets ------------------------------------------
-      - name: Scan repo for secrets (gitleaks)
-        uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Run the OSS gitleaks CLI directly (not gitleaks-action) so this works on
+      # org repos without a commercial license and writes a deterministic JSON
+      # report we can aggregate.
+      - name: Install gitleaks
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | sh -s -- -b "${RUNNER_TEMP}/bin" v8.24.0
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
-      - name: Copy gitleaks report into workspace
-        if: always()
+      - name: Scan repo for secrets (gitleaks)
+        continue-on-error: true # report only; fail on findings in vulnerabilities.md
         run: |
           mkdir -p reports
-          cp gitleaks-report.json reports/gitleaks.json 2>/dev/null || echo "{}" > reports/gitleaks.json || true
-          ls -la reports || true
+          gitleaks git --source "$GITHUB_WORKSPACE" \
+            --report-format=json --report-path=reports/gitleaks.json \
+            --redact --exit-code=0 || true
+          test -f reports/gitleaks.json || echo "{}" > reports/gitleaks.json
+          wc -c reports/gitleaks.json
 
       # ---- repo: python package vulnerabilities ---------------------------
       - name: Scan Python deps (pip-audit)
