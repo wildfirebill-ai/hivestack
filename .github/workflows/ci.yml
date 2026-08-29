@@ -1,0 +1,35 @@
+# CI — run the offline end-to-end suite on every push / pull request.
+# Never makes network calls: the suite boots a fresh uvicorn in a temp dir and
+# drives the provider-gated platform locally (satisfies "CI runs without network").
+#
+# Actions pinned to current, Node-24-compatible releases (Node 20 runner image is
+# deprecated as of 2025-09-19 — see GitHub's runner deprecation changelog).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  offline-e2e:
+    name: Offline end-to-end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run offline e2e suite
+        run: |
+          python tests/e2e_offline.py
+        timeout-minutes: 5

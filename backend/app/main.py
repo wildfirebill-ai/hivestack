@@ -3,22 +3,32 @@ static web assets are served when a build exists."""
 
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
+from prometheus_client import CONTENT_TYPE_LATEST
 
 from .config import settings
 from .db import init_db
+from .log import setup as setup_logging, get_logger
+from .metrics import MetricsMiddleware, metrics_payload
+from .ratelimit import RateLimitMiddleware
 from .routers import agents, aiops, auth, boards, chat, comms, economy, governance, health, memory, models, mcp, prompts, skills, studio, system, workflows, ws
 from .workflows import scheduler as workflow_scheduler
+
+_log = get_logger("app")
 
 
 @asynccontextmanager
 async def _lifespan(_app: FastAPI):
+    setup_logging(getattr(logging, settings.log_level, logging.INFO))
     init_db()
+    _log.info("hivestack starting", extra={"version": settings.version, "offline": settings.offline_mode})
     workflow_scheduler.start()
     yield
     workflow_scheduler.stop()
@@ -27,13 +37,24 @@ async def _lifespan(_app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.name, version=settings.version, lifespan=_lifespan)
 
-    # Dev conveniences only; production behind the Unraid container is same-origin.
+    # Cross-origin resource sharing — origins come from config/env so a hardened
+    # install can lock these down instead of always wildcard.
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.cors_origins,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Per-IP rate limiting (auth is strict; /metrics + /health are exempt).
+    app.add_middleware(RateLimitMiddleware)
+
+    # Prometheus RED metrics.
+    app.add_middleware(MetricsMiddleware)
+
+    @app.get("/metrics")
+    def metrics() -> Response:
+        return Response(metrics_payload(), media_type=CONTENT_TYPE_LATEST)
 
     app.include_router(health.router)
     app.include_router(auth.router)

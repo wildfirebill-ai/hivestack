@@ -1,9 +1,41 @@
 # hivestack
+
+# ---- Python ---------------------------------------------------------------
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# ---- Node / JS -------------------------------------------------------------
 node_modules/
 dist/
-__pycache__/
-*.pyc
-.venv/
+*.tsbuildinfo
+npm-debug.log*
+web/.vite/
+
+# ---- Local dev runtime & data ----------------------------------------------
 runtime/
+backups/
+
+# ---- Secrets (keep .env.example tracked) -----------------------------------
 .env
+.env.*
+!.env.example
+
+# ---- Workflow / scan outputs -----------------------------------------------
+vulnerabilities.md
+
+# ---- Logs ------------------------------------------------------------------
 *.log
+
+# ---- Editor / OS -----------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

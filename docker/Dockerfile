@@ -25,14 +25,16 @@ RUN python -c "from fastembed import TextEmbedding; TextEmbedding('sentence-tran
     && echo "[hivestack] embed model cached"
 
 COPY backend/ /app/backend/
+COPY scripts/backup.py /app/scripts/backup.py
 COPY --from=web /web/dist /app/web/dist
 COPY docker/entrypoint.sh /usr/local/bin/hivestack-entrypoint
-RUN chmod +x /usr/local/bin/hivestack-entrypoint
+COPY docker/maintenance.sh /usr/local/bin/hivestack-maintenance
+RUN chmod +x /usr/local/bin/hivestack-entrypoint /usr/local/bin/hivestack-maintenance
 
 EXPOSE 8080
 VOLUME ["/config", "/data", "/models"]
 
-HEALTHCHECK --interval=30s --timeout=4s --start-period=20s --retries=3 \
-  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).status == 200 else 1)"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health/ready', timeout=4).status == 200 else 1)"
 
 ENTRYPOINT ["hivestack-entrypoint"]

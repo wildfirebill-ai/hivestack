@@ -79,7 +79,14 @@ def get_gpu(_: str = _auth) -> dict:
 
 
 @router.get("/usage")
-def usage(_: str = _auth) -> dict:
+def usage(days: float | None = None, _: str = _auth) -> dict:
+    """Token + estimated cost usage. `days` optionally returns a per-day series."""
+    from ..governance import budget_config
+
+    cfg = budget_config()
+    cost_in = cfg["cost_per_1k_in"]
+    cost_out = cfg["cost_per_1k_out"]
+
     with _conn() as con:
         rows = con.execute(
             "SELECT COALESCE(provider,'n/a') AS provider, COALESCE(model,'n/a') AS model,"
@@ -93,4 +100,35 @@ def usage(_: str = _auth) -> dict:
             " COALESCE(SUM(output_tokens),0) AS out_tok"
             " FROM messages WHERE role='assistant'"
         ).fetchone()
-    return {"breakdown": [dict(r) for r in rows], "totals": dict(totals)}
+    totals = dict(totals)
+    breakdown = []
+    for r in rows:
+        b = dict(r)
+        b["est_cost_usd"] = round(
+            (b["in_tok"] / 1000.0) * cost_in + (b["out_tok"] / 1000.0) * cost_out, 6
+        )
+        breakdown.append(b)
+
+    result: dict = {
+        "breakdown": breakdown,
+        "totals": {**totals, "est_cost_usd": round(
+            (totals["in_tok"] / 1000.0) * cost_in + (totals["out_tok"] / 1000.0) * cost_out, 6
+        )},
+    }
+
+    if days is not None:
+        with _conn() as con:
+            series = con.execute(
+                "SELECT date(created_at) AS day, COUNT(*) AS calls,"
+                " COALESCE(SUM(input_tokens),0) AS in_tok, COALESCE(SUM(output_tokens),0) AS out_tok"
+                " FROM messages WHERE role='assistant' AND created_at >= datetime('now', ?)"
+                " GROUP BY date(created_at) ORDER BY day",
+                (f"-{int(days)} days",),
+            ).fetchall()
+        result["series"] = [
+            {**dict(s), "est_cost_usd": round(
+                (s["in_tok"] / 1000.0) * cost_in + (s["out_tok"] / 1000.0) * cost_out, 6
+            )}
+            for s in series
+        ]
+    return result

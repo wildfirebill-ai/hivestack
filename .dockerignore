@@ -1,0 +1,55 @@
+# Keep the Docker build context minimal. The image is built from:
+#   web/ (source -> Vite build stage), backend/, docker/entrypoint.sh,
+#   docker/maintenance.sh, scripts/backup.py
+# Everything else is irrelevant to the build and would only bloat the context.
+
+# Version control / CI
+.git
+.gitignore
+.github
+
+# Python
+.venv
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# JS / node
+web/node_modules
+web/dist
+*.tsbuildinfo
+npm-debug.log*
+
+# Local dev runtime & secrets
+runtime
+.env
+.env.*
+*.log
+
+# Tests, docs, release metadata (not needed in the image)
+tests
+scripts/*.sh
+scripts/*.ps1
+scripts/check-m40.*
+scripts/dev.*
+scripts/build.*
+scripts/backup.ps1
+scripts/release.sh
+README.md
+CHANGELOG.md
+PLAN.md
+task.md
+VERSION
+icon.png
+vulnerabilities.md
+
+# Backups / editor / OS
+backups
+**/.DS_Store
+**/Thumbs.db
+.vscode
+.idea

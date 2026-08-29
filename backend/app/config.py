@@ -94,6 +94,22 @@ class Settings:
     def server_port(self) -> int:
         return int(self.data.get("server", {}).get("port", 8080))
 
+    @property
+    def cors_origins(self) -> list[str]:
+        """Allowed CORS origins. Defaults to any (local-first convenience); set
+        `cors_origins` in config.yaml (or HIVESTACK_CORS_ORIGINS) to lock it down."""
+        env = os.getenv("HIVESTACK_CORS_ORIGINS")
+        if env:
+            return [o.strip() for o in env.split(",") if o.strip()]
+        raw = self.data.get("server", {}).get("cors_origins")
+        if isinstance(raw, list):
+            return [str(o) for o in raw if o]
+        return ["*"]
+
+    @property
+    def log_level(self) -> str:
+        return str(self.data.get("global", {}).get("log_level", "info")).upper()
+
     # ------------------------------------------------------------------ providers
     def providers(self) -> list[dict]:
         raw = self.data.get("providers", {}) or {}

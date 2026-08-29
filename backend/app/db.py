@@ -9,8 +9,17 @@ from .config import settings
 
 def _conn() -> sqlite3.Connection:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(settings.data_dir / "hivestack.db")
+    con = sqlite3.connect(settings.data_dir / "hivestack.db", timeout=10)
     con.row_factory = sqlite3.Row
+    # Hardened SQLite: WAL for concurrent reads + durability, FK enforcement,
+    # and a busy timeout so short writer locks don't 500 under load.
+    try:
+        con.execute("PRAGMA journal_mode=WAL")
+        con.execute("PRAGMA foreign_keys=ON")
+        con.execute("PRAGMA sync_mode=NORMAL")
+        con.execute("PRAGMA busy_timeout=10000")
+    except sqlite3.Error:
+        pass
     return con
 
 
@@ -384,3 +393,39 @@ def init_db() -> None:
             con.execute("CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts USING fts5(content)")
         except Exception:  # noqa: BLE001  (FTS5 not compiled into sqlite → keyword search falls back)
             pass
+        _migrate(con)
+
+
+# ------------------------------------------------------------------ schema versioning
+# Controlled, one-time migrations keyed off `PRAGMA user_version`. Appending to
+# this list (never editing an older entry) lets future schema changes migrate in
+# place instead of depending on ad-hoc ALTER TABLE calls.
+#
+# Each entry: (version_number, "name", "sql_statement(s)").
+# The version number MUST equal the list index (0-based) so user_version stays
+# sequential and a fresh DB can replay them in order.
+MIGRATIONS: list[tuple[int, str, str]] = [
+    (0, "baseline", ""),
+    # example future migration:
+    # (1, "add_xyz_column", "ALTER TABLE messages ADD COLUMN xyz TEXT;"),
+]
+
+
+def _migrate(con: sqlite3.Connection) -> None:
+    """Bring the schema version up to date, applying any missing migrations."""
+    current = con.execute("PRAGMA user_version").fetchone()[0]
+    target = len(MIGRATIONS) - 1
+    for version, name, sql in MIGRATIONS:
+        if version > current and sql:
+            con.execute("BEGIN")
+            try:
+                con.executescript(sql)
+                con.execute(f"PRAGMA user_version = {version}")
+                con.execute("COMMIT")
+            except Exception:
+                con.execute("ROLLBACK")
+                raise
+    # If a fresh DB was created at the baseline but user_version isn't set,
+    # pin it to the latest known version so we don't replay/duplicate.
+    if current == 0 and target >= 0:
+        con.execute(f"PRAGMA user_version = {target}")

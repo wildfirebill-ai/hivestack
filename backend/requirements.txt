@@ -12,3 +12,5 @@ python-pptx>=1.0
 pillow>=10
 scikit-learn>=1.5
 cryptography>=43
+slowapi>=0.1.9
+prometheus-client>=0.20
