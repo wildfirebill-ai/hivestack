@@ -306,7 +306,7 @@ export default function Settings() {
               {prompts.map((p) => (
                 <tr key={p.name}>
                   <td className="prompt-name">{p.name}</td>
-                  <td className="prompt-desc">{p.system.slice(0, 90)}</td>
+                  <td className="prompt-desc">{(p.system ?? '').slice(0, 90)}</td>
                   <td>
                     <button disabled={busy === `dp:${p.name}`} onClick={() => deletePrompt(p.name)}>
                       delete
