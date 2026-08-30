@@ -4,6 +4,15 @@ All notable changes to hivestack are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-08-30
+
+### Fixed
+- GPU detection false `CPU-only`: entrypoint now detects GPU via `/dev/nvidia*` + `/proc/driver/nvidia/version` when `nvidia-smi` binary is not injected, logs `NVIDIA_VISIBLE_DEVICES` for debugging
+- Unraid template: default GPU UUID set to Tesla M40 `GPU-f6160a9b-0a12-1740-5741-569d0eb02069`, added `NVIDIA_DRIVER_CAPABILITIES` variable
+
+### Added
+- Dockerfile ENV defaults for `NVIDIA_VISIBLE_DEVICES` / `NVIDIA_DRIVER_CAPABILITIES` so image works without explicit env
+
 ## [0.1.1] - 2026-08-30
 
 ### Added
