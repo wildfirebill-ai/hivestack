@@ -6,16 +6,20 @@ RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 COPY web/ .
 RUN npm run build
 
-# ---- Stage 2: runtime ------------------------------------------------------
-FROM python:3.12-slim
-WORKDIR /app
+# ---- Stage 2: runtime (NVIDIA CUDA base with Python) -----------------------
+FROM nvidia/cuda:12.2.0-base-debian12 AS runtime
 
-# Patch OS packages + install nvidia-utils for GPU verification
+# Install Python 3.12 + pip
 RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends nvidia-utils-580 \
+    && apt-get install -y --no-install-recommends python3.12 python3.12-venv python3-pip \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/* /var/tmp/*
+
+# Symlink python3.12 -> python3
+RUN ln -sf /usr/bin/python3.12 /usr/bin/python3 \
+    && ln -sf /usr/bin/python3.12 /usr/bin/python
+
+WORKDIR /app
 
 ENV PYTHONPATH=/app/backend \
     HIVESTACK_CONFIG_DIR=/config \
@@ -26,11 +30,11 @@ ENV PYTHONPATH=/app/backend \
     PYTHONUNBUFFERED=1
 
 COPY backend/requirements.txt /app/backend/requirements.txt
-# Upgrade pip first so the Python base image's known-vulnerable pip is replaced.
-RUN python -m pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r /app/backend/requirements.txt
+RUN python3 -m pip install --no-cache-dir --upgrade pip \
+    && pip3 install --no-cache-dir -r /app/backend/requirements.txt
+
 # pre-cache the offline embedding model so RAG works with zero network at runtime
-RUN python -c "from fastembed import TextEmbedding; TextEmbedding('sentence-transformers/all-MiniLM-L6-v2', cache_dir='/opt/hivestack-models/embed')" \
+RUN python3 -c "from fastembed import TextEmbedding; TextEmbedding('sentence-transformers/all-MiniLM-L6-v2', cache_dir='/opt/hivestack-models/embed')" \
     && echo "[hivestack] embed model cached"
 
 COPY backend/ /app/backend/
@@ -44,6 +48,6 @@ EXPOSE 8080
 VOLUME ["/config", "/data", "/models"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health/ready', timeout=4).status == 200 else 1)"
+  CMD python3 -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health/ready', timeout=4).status == 200 else 1)"
 
 ENTRYPOINT ["hivestack-entrypoint"]
