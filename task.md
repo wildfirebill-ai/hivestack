@@ -32,7 +32,7 @@ Owner: agent + human at each Stage gate. Master plan: `../PLAN.md`.
 - [x] Multi-stage `Dockerfile` (node build → python runtime, HEALTHCHECK, volumes)
 - [x] `entrypoint.sh` (seed config, GPU banner)
 - [x] `docker-compose.yml` (NVIDIA gpu reservation + optional Ollama sidecar profile)
-- [x] Unraid CA template (`docker/unraid-template.xml`)
+- [x] Unraid CA template (`docker/hivestack-m40.xml`)
 - [–] Docker build on a real box with NVIDIA runtime (needs host/docker — not verifiable here)
 
 ## Stage 2 (next) — Inference & Model Layer ✅
@@ -150,7 +150,7 @@ Owner: agent + human at each Stage gate. Master plan: `../PLAN.md`.
 ## Stage 12 (next) — Distro & Hardening
 
 ### Unraid community-app template
-- [x] `docker/unraid-template.xml` — real registry `ghcr.io/wildfirebill-ai/hivestack`, support link, icon, ports/volumes/GPU/params, overview
+- [x] `docker/hivestack-m40.xml` — real registry `ghcr.io/wildfirebill-ai/hivestack`, support link, icon, ports/volumes/GPU/params, overview
 - [x] App icon (`icon.png`)
 - [~] Register template with the Unraid CA repo once a real registry image is pushed
 

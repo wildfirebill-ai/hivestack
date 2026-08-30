@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docker Image](https://img.shields.io/badge/Docker-ghcr.io%2Fwildfirebill--ai%2Fhivestack-blue)](https://ghcr.io/wildfirebill-ai/hivestack)
-[![Unraid Template](https://img.shields.io/badge/Unraid-Community%20Apps-green)](docker/unraid-template.xml)
+[![Unraid Template](https://img.shields.io/badge/Unraid-Community%20Apps-green)](docker/hivestack-m40.xml)
 [![Security Scan](https://github.com/wildfirebill-ai/hivestack/actions/workflows/security-scan.yml/badge.svg)](https://github.com/wildfirebill-ai/hivestack/actions/workflows/security-scan.yml)
 [![CI](https://github.com/wildfirebill-ai/hivestack/actions/workflows/ci.yml/badge.svg)](https://github.com/wildfirebill-ai/hivestack/actions/workflows/ci.yml)
 
