@@ -9,7 +9,7 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/wildfirebill-ai/hivestack/issues</Support>
   <Project>https://github.com/wildfirebill-ai/hivestack</Project>
-  <Overview>Local-first AI agent & AIOps platform running fully offline on Tesla M40 (Maxwell CC 5.2). Single container with provider gate, RAG, MCP, workflows, AIOps, governance.</Overview>
+  <Overview>Local-first AI agent &amp; AIOps platform running fully offline on Tesla M40 (Maxwell CC 5.2). Single container with provider gate, RAG, MCP, workflows, AIOps, governance.</Overview>
   <Category>Productivity:AITools</Category>
   <WebUI>http://[IP]:[PORT:8080]</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/wildfirebill-ai/hivestack/main/docker/hivestack-m40.xml</TemplateURL>
