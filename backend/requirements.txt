@@ -14,3 +14,5 @@ scikit-learn>=1.5
 cryptography>=43
 slowapi>=0.1.9
 prometheus-client>=0.20
+# GHSA-6v7p-g79w-8964: msgpack <1.2.1 — force the patched version in the image.
+msgpack>=1.2.1

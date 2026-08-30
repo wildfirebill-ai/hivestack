@@ -1,136 +1,229 @@
-# hivestack
+# hivestack — Local-First AI Agent Platform
 
-Local-first AI agent / AIOps platform. Runs fully offline on a Tesla M40 (Maxwell, CC 5.2),
-ships as a single Unraid Docker app, and drives everything through a Web UI. Every outside
-provider sits behind its own **off switch** — local-only by default.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Docker Image](https://img.shields.io/badge/Docker-ghcr.io%2Fwildfirebill--ai%2Fhivestack-blue)](https://ghcr.io/wildfirebill-ai/hivestack)
+[![Unraid Template](https://img.shields.io/badge/Unraid-Community%20Apps-green)](docker/unraid-template.xml)
+[![Security Scan](https://github.com/wildfirebill-ai/hivestack/actions/workflows/security-scan.yml/badge.svg)](https://github.com/wildfirebill-ai/hivestack/actions/workflows/security-scan.yml)
+[![CI](https://github.com/wildfirebill-ai/hivestack/actions/workflows/ci.yml/badge.svg)](https://github.com/wildfirebill-ai/hivestack/actions/workflows/ci.yml)
 
-> Status: **Stage 12 — Distro & Hardening (in progress)**. Stages 0-11 complete. Offline e2e green; release/backup/restore + Unraid template ready for first publish.
+**hivestack** is a **local-first AI agent and AIOps platform** that runs **fully offline** on a Tesla M40 (Maxwell, CC 5.2). It ships as a single Docker/Unraid app with a Web UI. Every cloud provider (OpenAI, Anthropic, Gemini, etc.) sits behind its own **enable switch** — local-only by default.
 
-## What works today
+> **Status**: Stage 12 — Distro & Hardening (in progress). Stages 0–11 complete. Offline e2e suite: 14/14 ✅
 
-- **Provider gate** — global `offline_mode` lockout + per-provider enables; cloud providers refused (403) while offline.
-- **Real chat** — chat routes to a registered model through normalized adapters: local **Ollama** and cloud **OpenAI / Anthropic / Gemini** (SSE streaming). CPU fallback available (`provider: fallback`).
-- **Model registry + prompt studio + usage accounting** — register/enable/default/test models, async Ollama pull, named system prompts, per-provider token accounting.
-- **Agent runtime** — bounded plan→act loop over the gate; a run is created from a goal, the agent calls **scoped tools** per turn, and every step lands as an audited `run_event`. Cancel flag, step cap, clean error surfacing.
-- **Tool registry + sandbox** — `calculator`, `list_workspace`, `read_file`, `write_file` (workspace-confined), `shell` (env-isolated, timed, `/dev/null` stdin), `web_fetch` (blocked in offline mode). Per-run `allowed_scopes` gate each call.
-- **MCP** — hivestack acts as an MCP **server** (`python -m app.mcp_server_entry`) and as an MCP **client** (`mcp_servers` config, stdio + streamable HTTP) whose tools join the agent registry behind the network gate.
-- **Workflows & scheduling** — persisted DAG workflows (`tool`/`agent`/`chat`/`wait`/`map`/`board` steps) with parallel waves, retries, checkpoints + resume, and **approval stops** (pause → approve/deny → resume). Cron/interval **scheduler** daemon fires them. `{step}`/`{item}` substitution throughout.
-- **Kanban boards** — boards/columns/cards with move; workflow `board` steps emit cards.
-- **Memory & knowledge (RAG)** — verbatim memory store + chunks, hybrid search (local CPU embeddings `all-MiniLM-L6-v2` via fastembed/ONNX + FTS5 keyword), RAG ingest (text/csv/url/file with word-aware chunking), token-budget context packer, compaction-into-summaries (archives originals), and a temporal knowledge graph (entities/relations with validity + invalidation). Chat takes a `rag` flag; agents get a `memory_search` tool and an optional memory-injected run.
-- **Skills & packaging** — versioned skill registry (instruction bundles injected into agent runs), a generator (template offline / LLM-author with fallback), structural validation + eval trial runs, portable SKILL.md export, and an install manager from local paths or git (offline-gated) with install-source sync-state.
-- **Studio: documents, data & media** — Word (sections/tables/`{{field}}` merge), Excel (sheets + live formulas), and PowerPoint builders with preview/audit/diff; CSV/JSON profiling + log normalization + anomaly detection (z-score, IQR, Isolation Forest); image-gen/OCR wired behind graceful 501 when optional backends are absent; **approval-gated publishing** to a local outbox.
-- **Comms & voice** — channels registry (webhook/email/telegram/discord/slack/matrix, external ones offline-gated), a reply pipeline that degrades agent → RAG-chat → **memory-backed offline fallback**, email/webhook ingest with optional workflow triggers, a mailbox audit log, an **encrypted secrets vault** (Fernet), and a wake-word → STT → agent → TTS loop (text path fully verifiable offline; real audio needs optional backends).
-- **AIOps** — telemetry ingestion (points + logs) with windowed queries and anomaly detection (zscore/IQR/Isolation Forest); alerts with ack/close; a service **topology + RCA** engine (affected-set traversal + root scoring w/ memory hints); incidents with event timelines; **remediation with approval → recovery verification**; postmortems to the outbox; and **chaos fault-injection demo targets** whose threads write baseline→fault→recovery telemetry. One `/api/aiops/demo` call drives the full loop: fault → detect → alert → incident+RCA → approve & verify.
-- **Governance** — RBAC users (admin/operator/viewer, PBKDF2), an **immutable audit log** wired into toggles/approvals/vault/self-service, **daily + per-run token budgets with cost caps** (enforced in the agent runtime — proven `budget_capped`), a verification gate for finished runs, an observability **dashboard** (tokens/cost/runs/incidents/alerts), and a security-posture self-review.
-- **Economy (experimental, opt-in)** — local escrow/gig marketplace with a ledger, ECDSA signature identity with one-time nonce challenges (anti-replay), and signed federation pings via a public signature-authenticated `/api/federation/ingest`. Disabled by default; core unaffected.
-- **Web UI** — dashboard, streaming chat, **Agents**, **Workflows**, **Boards**, **Memory**, **Skills**, **Studio**, **Comms**, **AIOps**, **Governance**, **Economy**, settings.
-- **Docker / Unraid** — image (embedding model pre-cached offline), compose (GPU + `hivestack-ollama` sidecar), Unraid CA template, healthcheck.
+---
 
-## Layout
+## Why hivestack?
 
+| Problem | hivestack Solution |
+|---------|-------------------|
+| **Cloud dependency** | Runs 100% offline — no API keys required for core features |
+| **Data privacy** | Your data never leaves your hardware (M40 GPU or CPU) |
+| **Provider lock-in** | Unified provider gate: switch between local Ollama and cloud models instantly |
+| **Complex setup** | Single container deploy via Docker Compose or Unraid Community Apps |
+| **Observability gap** | Built-in AIOps: telemetry, alerts, RCA, chaos testing, postmortems |
+
+---
+
+## Core Features
+
+### 🔒 Provider Gate — Zero Cloud by Default
+- **Global `offline_mode`** — hard block on all cloud calls (returns `403 PROVIDER_DISABLED`)
+- **Per-provider toggles** — OpenAI, Anthropic, Gemini, Ollama each independently enabled
+- **Credentials only read** when both `offline_mode=false` AND provider enabled
+- **Zero network calls** in default configuration
+
+### 💬 Chat & Agents
+- **Streaming chat** via SSE with provider auto-selection
+- **Agent runtime** — plan→act loop with scoped tools, step caps, cancel flags
+- **Tool sandbox** — calculator, filesystem, shell, web fetch (offline-gated), MCP client/server
+- **MCP support** — acts as both MCP server and MCP client
+
+### 🧠 Memory & Knowledge (RAG)
+- **Hybrid search** — local embeddings (`all-MiniLM-L6-v2` via fastembed/ONNX) + FTS5 keyword
+- **Temporal knowledge graph** — entities/relations with validity windows
+- **Compaction** — summaries archive originals, token-budget context packing
+
+### 🔄 Workflows & Orchestration
+- **Persisted DAGs** — tool/agent/chat/wait/map/board steps with parallel waves
+- **Checkpoints + resume** — approval stops, retries, `{step}`/`{item}` substitution
+- **Cron scheduler** — interval/cron triggers with daemon
+
+### 📋 Kanban Boards
+- Boards → columns → cards with drag-drop moves
+- Workflow `board` steps emit cards automatically
+
+### 🛠 Skills & Packaging
+- Versioned skill registry injected into agent runs
+- Generator with template/LLM-author modes, eval trial runs
+- Portable SKILL.md export, install from local paths or git (offline-gated)
+
+### 📄 Studio: Documents, Data & Media
+- **Word** — sections, tables, `{{field}}` merge with preview/audit/diff
+- **Excel** — sheets + live formulas, CSV/JSON profiling, anomaly detection
+- **PowerPoint** — builders with approval-gated local outbox publishing
+
+### 📡 Comms & Voice
+- Channels: webhook, email, Telegram, Discord, Slack, Matrix (external = offline-gated)
+- Reply pipeline: agent → RAG-chat → memory-backed offline fallback
+- Encrypted secrets vault (Fernet), wake-word → STT → agent → TTS loop
+
+### 🚨 AIOps (Full Observability Loop)
+- **Telemetry ingestion** — points + logs with windowed queries
+- **Anomaly detection** — z-score, IQR, Isolation Forest
+- **Alerts** with ack/close, **service topology + RCA** engine
+- **Incidents** with timelines, **remediation** with approval → recovery verification
+- **Chaos fault-injection** — demo targets: fault → detect → alert → incident → RCA → approve & verify
+- **One-call demo**: `POST /api/aiops/demo` drives full loop
+
+### 🛡 Governance & Security
+- **RBAC** — admin/operator/viewer with PBKDF2
+- **Immutable audit log** — wired into toggles, approvals, vault, self-service
+- **Token budgets** — daily + per-run cost caps enforced in agent runtime
+- **Security posture** self-review dashboard
+
+### 💰 Economy (Experimental, Opt-In)
+- Local escrow/gig marketplace with ledger
+- ECDSA signature identity + one-time nonce challenges (anti-replay)
+- Signed federation pings via `/api/federation/ingest`
+
+---
+
+## Quick Start
+
+### Docker Compose (Linux/macOS/Windows)
+
+```bash
+git clone https://github.com/wildfirebill-ai/hivestack.git
+cd hivestack
+cp .env.example .env
+# Edit .env: set HIVESTACK_ADMIN_PASSWORD=your-strong-password
+docker compose -f docker/docker-compose.yml up -d
+# Open http://localhost:8080 → login: admin / your-password
 ```
-backend/          FastAPI app (config, provider gate, auth, chat, system, ws)
-web/              React + Vite UI (built into the image at bake time)
-docker/           Dockerfile, docker-compose.yml, entrypoint, Unraid template
-scripts/          dev + build + GPU-check launchers
-runtime/          local dev data/config/models (git-ignored; Docker uses /config /data /models)
-```
 
-## Quick start (dev)
+### Unraid Community Apps
 
-```powershell
-# Windows
-python -m venv .venv
-.\.venv\Scripts\python -m pip install -r backend\requirements.txt
-.\scripts\dev.ps1            # API :8110  +  Web :5173  (login admin / hivestack)
-```
+1. Install **NVIDIA GPU Plugin** + **Driver 580 branch** (required for M40/CC 5.2)
+2. **Apps → Search "hivestack" → Install**
+3. Set paths: `/config`, `/data`, `/models` (defaults work)
+4. Set **Admin password** (required)
+5. Optional: **GPU UUID(s)** = `all` for M40
+6. Apply → Web UI at `http://<unraid-ip>:8080`
+
+### Local Development
 
 ```bash
 # Linux/macOS
 python3 -m venv .venv && ./.venv/bin/pip install -r backend/requirements.txt
-./scripts/dev.sh
+./scripts/dev.sh          # API :8110 + Web :5173
+
+# Windows PowerShell
+python -m venv .venv
+.\.venv\Scripts\python -m pip install -r backend\requirements.txt
+.\scripts\dev.ps1
 ```
 
-`npm install`/`build` happen automatically via the Docker build; only run them manually inside `web/`
-if you're hacking on the UI.
+---
 
-## Offline end-to-end test
+## Hardware Requirements
 
-`tests/e2e_offline.py` drives the whole platform against a fresh uvicorn in a temporary runtime dir —
-no network, no model required — and asserts every exit criterion from Stages 1-11:
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| **GPU** | Tesla M40 (24 GB VRAM, CC 5.2) | Same |
+| **Driver** | NVIDIA 580 branch (Linux) | Same |
+| **System RAM** | 16 GB | 32 GB |
+| **Disk** | 20 GB free | 50 GB free (models + data) |
+| **CPU** | 4 cores | 8+ cores |
 
-```powershell
-python tests/e2e_offline.py          # uses a random free port
-python tests/e2e_offline.py 8110     # or pin a port
-```
+> **Note**: Stage 1 (core platform) runs CPU-only. Stage 2+ (local inference via Ollama) requires M40 GPU.
 
-Exit code is non-zero if any scenario fails. It checks health/auth, the provider gate (cloud refused
-offline), chat `provider: fallback` (returning `source: "fallback"`), memory hybrid search, skills
-generate+validate, doc/word audit, comms+vault, workflow approval gates, agent run lifecycle,
-AIOps fault→approve→verify, governance budget/RBAC, economy escrow, and studio publishing.
+---
 
-> On Windows the suite reconfigures stdout to UTF-8 so scenario names containing `→` / `·` never
-> crash under the default cp1252 console. If a chat-fallback run reports a missing `"source"` key,
-> a stale server/bytecode is serving an older build — kill any leftover uvicorn bound to the port
-> (and clear `backend/app/routers/__pycache__`) before re-running.
+## Documentation
 
-## Release, backup & restore
+| Guide | Description |
+|-------|-------------|
+| [Getting Started](docs/getting-started.md) | Docker Compose & Unraid quick start |
+| [Configuration](docs/configuration.md) | All config.yaml options, env overrides, security |
+| [Provider Management](docs/providers.md) | Enable/disable cloud & local providers |
+| [Unraid Guide](docs/unraid.md) | Template install, GPU setup, backup/restore |
+| [API Reference](docs/api.md) | REST endpoints, auth, WebSockets, errors |
+| [Architecture](docs/architecture.md) | System design, data flow, invariants |
 
-The current version lives in `VERSION` (source of truth), echoed in the image tag. Cut and push a
-release to GitHub Container Registry:
+---
+
+## Testing & Quality
 
 ```bash
-./scripts/build.sh        # build hivestack:<version> + :latest locally
-./scripts/release.sh      # build + tag + push ghcr.io/wildfirebill-ai/hivestack:<version> and :latest
-./scripts/release.sh --no-push    # just build locally
-# then cut the matching tag when you're ready:
+make test          # pytest unit suite
+make e2e           # offline end-to-end suite (14 scenarios, must exit 0)
+make typecheck     # TypeScript strict mode
+make build         # Docker image
+```
+
+**CI Pipeline** runs on every push/PR:
+- Offline e2e suite (no network calls)
+- Security scan: gitleaks + pip-audit + npm audit + Trivy image scan
+- Results aggregated to `vulnerabilities.md`
+
+---
+
+## Release & Backup
+
+```bash
+# Version lives in VERSION file (source of truth)
+./scripts/build.sh                    # build locally
+./scripts/release.sh                  # build + push to GHCR
 git tag -a v$(cat VERSION) -m "Release v$(cat VERSION)" && git push origin v$(cat VERSION)
-```
 
-Back up / restore data + config with the dated-zip tool (also push-button from `scripts/backup.*`):
-
-```bash
-python scripts/backup.py --data /data --config /config --out ./backups     # write
-python scripts/backup.py --verify ./backups/hivestack-backup-<ts>.zip       # check
+# Backup / restore
+python scripts/backup.py --data /data --config /config --out ./backups
 python scripts/backup.py --restore ./backups/hivestack-backup-<ts>.zip --dest ./restore
 ```
 
-## Docker / Unraid
+---
 
-```bash
-./scripts/build.sh                             # build hivestack:0.1.0
-docker compose -f docker/docker-compose.yml up # with optional: --profile gpu (adds Ollama)
-```
+## Architecture Decisions
 
-On Unraid: install the NVIDIA driver plugin, keep the **580 branch** for Maxwell, then import
-`docker/unraid-template.xml` into Community Apps (template registry values are placeholders until
-first publish). Mount `/config`, `/data`, `/models` and set `HIVESTACK_ADMIN_PASSWORD`.
+| ADR | Title | Status |
+|-----|-------|--------|
+| [0001](docs/adr/0001-sqlite-wal-migrations.md) | SQLite WAL + Migrations | Accepted |
 
-GPU sanity check: `./scripts/check-m40.sh` (should list the M40, CC 5.2).
+---
 
-## Roadmap
+## Contributing
 
-| Stage | Focus | State |
-|------|-------|-------|
-| 0 | Planning & decisions | ✅ |
-| 1 | Foundation: API, provider gate, Web UI, Docker/Unraid shell | ✅ |
-| 2 | Inference & model layer | ✅ |
-| 3 | Agent core & tool runtime (scoped tools, sandbox, MCP) | ✅ |
-| 4 | Orchestration, workflows & boards | ✅ |
-| 5 | Memory & knowledge (RAG) | ✅ |
-| 6 | Skills & packaging | ✅ |
-| 7 | Documents, data & media | ✅ |
-| 8 | Communications & voice | ✅ |
-| 9 | AIOps module | ✅ |
-| 10 | Governance, security & observability | ✅ |
-| 11 | Economy, identity & federation (experimental) | ✅ |
-| 12 | Distro & hardening | in progress |
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for:
+- Branching strategy, commit conventions
+- Local test commands (`make test && make e2e && make typecheck`)
+- Architecture invariants (offline-first, provider gate, DB migrations)
+- Security reporting: **security@wildfirebill.ai**
 
-## Chatting with a real model
+---
 
-1. Settings → Providers: ensure `ollama` enabled (local engines ignore offline mode).
-2. Settings → Models: **pull** a weight (`qwen2.5:7b` fits an M40 easily), then **enable** a
-   registry entry (or add your own name / model_id).
-3. Chat page auto-selects the default model and streams through it.
+## Security
 
-On Unraid the app reaches the Ollama sidecar via `HIVESTACK_OLLAMA_URL=http://hivestack-ollama:11434`; locally it uses `http://127.0.0.1:11434` (set `HIVESTACK_OLLAMA_URL` to override).
+- **Never commit secrets** — `.env`, `.env.*`, `runtime/` are gitignored
+- **Report vulnerabilities privately**: security@wildfirebill.ai
+- Automated scanning: gitleaks, pip-audit, npm audit, Trivy (weekly + on push)
+- See [SECURITY.md](.github/SECURITY.md) for full policy
+
+---
+
+## License
+
+**MIT License** — see [LICENSE](LICENSE) for details.
+
+Copyright (c) 2024 wildfirebill-ai
+
+---
+
+## Links
+
+- **Web UI**: `http://<host>:8080`
+- **API Docs (Swagger)**: `http://<host>:8080/docs`
+- **Health Check**: `http://<host>:8080/health/ready`
+- **GitHub**: https://github.com/wildfirebill-ai/hivestack
+- **Issues**: https://github.com/wildfirebill-ai/hivestack/issues
+- **Discussions**: https://github.com/wildfirebill-ai/hivestack/discussions
+- **Security**: security@wildfirebill.ai

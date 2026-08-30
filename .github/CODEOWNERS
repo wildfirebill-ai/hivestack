@@ -1,0 +1,39 @@
+# CODEOWNERS — Auto-assign reviewers for critical paths
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners (all PRs)
+* @wildfirebill
+
+# Critical security paths — require approval from these owners
+/backend/app/inference/client.py @wildfirebill
+/backend/app/auth/ @wildfirebill
+/backend/app/db.py @wildfirebill
+/backend/app/config.py @wildfirebill
+
+# Provider gate — the single choke point for all model calls
+/backend/app/inference/ @wildfirebill
+
+# Database migrations — append-only, never edit applied
+/backend/app/migrations/ @wildfirebill
+
+# Docker / container security
+/docker/ @wildfirebill
+/docker/entrypoint.sh @wildfirebill
+/docker/maintenance.sh @wildfirebill
+
+# CI/CD workflows
+/.github/workflows/ @wildfirebill
+
+# Security scan aggregation
+/.github/scripts/aggregate_vulns.py @wildfirebill
+
+# Web UI — type-checked in CI
+/web/ @wildfirebill
+
+# Tests — e2e suite must stay green (14 scenarios)
+/tests/e2e_offline.py @wildfirebill
+/tests/unit/ @wildfirebill
+
+# Release scripts
+/scripts/release.sh @wildfirebill
+/scripts/build.sh @wildfirebill
