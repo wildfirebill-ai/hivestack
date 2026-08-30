@@ -32,7 +32,8 @@ Parameters: set a strong admin password and (optionally) the GPU UUID.</Descript
   <Config Name="Models path" Target="/models" Default="/mnt/user/appdata/hivestack/models" Mode="rw" Description="Model cache (Ollama models from Stage 2)" Type="Path" Display="always" Required="true" Mask="false"/>
   <Config Name="Admin password" Target="HIVESTACK_ADMIN_PASSWORD" Default="changeme" Description="Web UI admin password (change me!)" Type="Variable" Display="always" Required="true" Mask="true"/>
   <Config Name="Admin user" Target="HIVESTACK_ADMIN_USER" Default="admin" Description="Web UI admin username" Type="Variable" Display="advanced" Required="false" Mask="false"/>
-  <Config Name="GPU UUID(s)" Target="NVIDIA_VISIBLE_DEVICES" Default="all" Description="NVIDIA devices to expose. Run 'nvidia-smi -L' on Unraid to get UUID. For Tesla M40 (GPU 1), use its UUID (e.g., GPU-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). 'all' = every GPU." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="GPU UUID(s)" Target="NVIDIA_VISIBLE_DEVICES" Default="GPU-f6160a9b-0a12-1740-5741-569d0eb02069" Description="NVIDIA devices to expose. Run 'nvidia-smi -L' on Unraid to get UUID. 'all' = every GPU. Tesla M40 on this host = GPU-f6160a9b-0a12-1740-5741-569d0eb02069" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="NVIDIA capabilities" Target="NVIDIA_DRIVER_CAPABILITIES" Default="compute,utility" Description="NVIDIA driver capabilities" Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="Ollama URL" Target="HIVESTACK_OLLAMA_URL" Default="http://hivestack-ollama:11434" Description="Ollama sidecar URL (docker-compose service name)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="Post Arguments" Target="POST_ARGS" Default="" Description="Optional extra args passed to uvicorn" Type="Variable" Display="advanced" Required="false" Mask="false"/>
 </Container>
