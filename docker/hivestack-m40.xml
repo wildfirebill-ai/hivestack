@@ -28,6 +28,7 @@ Parameters: set a strong admin password and (optionally) the GPU UUID.</Descript
   <Overview>hivestack ships the Web UI, API, and offline AIOps loop in one container. Mount /config, /data, and /models for persistence; attach the M40 for local inference via the optional Ollama sidecar.</Overview>
 
   <Config Name="Web UI Port" Target="8080" Default="8080" Mode="tcp" Description="Web UI and API port" Type="Port" Display="always" Required="true" Mask="false"/>
+  <Config Name="Web UI URL" Target="WEB_UI_URL" Default="http://[IP]:[PORT:8080]" Description="Auto-generated Web UI access link" Type="Variable" Display="always" Required="false" Mask="false" Mode="ro"/>
   <Config Name="Config path" Target="/config" Default="/mnt/user/appdata/hivestack/config" Mode="rw" Description="Persistent config (config.yaml seeded on first boot)" Type="Path" Display="always" Required="true" Mask="false"/>
   <Config Name="Data path" Target="/data" Default="/mnt/user/appdata/hivestack/data" Mode="rw" Description="Persistent data (SQLite, logs)" Type="Path" Display="always" Required="true" Mask="false"/>
   <Config Name="Models path" Target="/models" Default="/mnt/user/appdata/hivestack/models" Mode="rw" Description="Model cache (Ollama models from Stage 2)" Type="Path" Display="always" Required="true" Mask="false"/>
