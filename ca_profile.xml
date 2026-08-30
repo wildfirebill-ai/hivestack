@@ -1,0 +1,12 @@
+<CommunityApplications>
+  <Profile>
+    hivestack — Local-first AI agent & AIOps platform running fully offline on Tesla M40 (Maxwell CC 5.2).
+    Single Docker/Unraid app with provider gate, RAG, MCP, workflows, AIOps, governance.
+    Maintained by wildfirebill-ai.
+  </Profile>
+  <Icon>https://raw.githubusercontent.com/wildfirebill-ai/hivestack/main/icon.png</Icon>
+  <WebPage>https://github.com/wildfirebill-ai/hivestack</WebPage>
+  <Forum>https://github.com/wildfirebill-ai/hivestack/issues</Forum>
+  <DonateLink>https://github.com/sponsors/wildfirebill</DonateLink>
+  <DonateText>Support this project</DonateText>
+</CommunityApplications>

@@ -15,7 +15,8 @@
   <TemplateURL>https://raw.githubusercontent.com/wildfirebill-ai/hivestack/main/docker/hivestack-m40.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/wildfirebill-ai/hivestack/main/icon.png</Icon>
   <MinVer>6.9</MinVer>
-  <MaxVer/>
+  <MaxVer>6.12.9</MaxVer>
+  <ExtraSearchTerms>ai aops local-first offline m40 rag mcp ollama</ExtraSearchTerms>
   <Description>Local-first AI agent platform with a per-provider on/off gate, Web UI, and Tesla M40 (Maxwell) GPU support.
 
 Features
