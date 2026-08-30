@@ -68,7 +68,13 @@ class OllamaAdapter(ChatAdapter):
     def _stream(self, url: str, payload: dict) -> Iterator[dict]:
         with httpx.Client(timeout=_http_timeout()) as client:
             with client.stream("POST", url, json=payload) as r:
-                r.raise_for_status()
+                if r.status_code >= 400:
+                    # read body for useful Ollama error (e.g. "model not found")
+                    try:
+                        body = r.read().decode()[:500]
+                    except Exception:
+                        body = ""
+                    raise InferenceError(f"Ollama {r.status_code} at {url}: {body or r.reason_phrase}", r.status_code if r.status_code < 500 else 502)
                 for line in r.iter_lines():
                     line = line.strip()
                     if not line:
