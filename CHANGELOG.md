@@ -4,6 +4,12 @@ All notable changes to hivestack are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-08-30
+
+### Fixed
+- Settings page crash `TypeError: x.system.slice is not a function` when prompt `system` is null — now `(p.system ?? '').slice(0,90)`
+- Ollama `400 Bad Request` on chat stream now surfaces body (e.g. `model not found`) instead of generic `HTTPStatusError` → 500 stack
+
 ## [0.1.3] - 2026-08-30
 
 ### Fixed
