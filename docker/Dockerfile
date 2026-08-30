@@ -6,8 +6,8 @@ RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 COPY web/ .
 RUN npm run build
 
-# ---- Stage 2: runtime (NVIDIA CUDA base with Python) -----------------------
-FROM nvidia/cuda:12.2.0-base-ubuntu22.04 AS runtime
+# ---- Stage 2: runtime (NVIDIA CUDA runtime with Python) -----------------------
+FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04 AS runtime
 
 # Install Python 3.12 + pip
 RUN apt-get update \
