@@ -4,6 +4,12 @@ All notable changes to hivestack are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-08-30
+
+### Fixed
+- Dashboard GPU `not present / unknown` when `/dev/nvidia*` not injected but driver present: backend `/api/system/gpu` now falls back to `/proc/driver/nvidia/version` + device nodes, returns `present: true` with `ollama_supported: true` (CC 5.2)
+- Custom `wildfire` network with static IP bypassed plugin auto `--gpus` injection — documented manual `ExtraParams: --gpus all --runtime=nvidia` workaround
+
 ## [0.1.2] - 2026-08-30
 
 ### Fixed
