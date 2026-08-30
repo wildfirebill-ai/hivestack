@@ -1,13 +1,21 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
-  hivestack — Unraid Community Applications template.
-  Published from the wildfirebill-ai/hivestack repo. Update the image tag to
-  match the released version; <Repository>:latest tracks release builds.
--->
-<XML>
-  <Category>Productivity:AITools</Category>
-  <Project>hivestack</Project>
+<?xml version="1.0"?>
+<Container version="2">
   <Name>hivestack</Name>
+  <Repository>ghcr.io/wildfirebill-ai/hivestack:latest</Repository>
+  <Registry>https://ghcr.io</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/wildfirebill-ai/hivestack/issues</Support>
+  <Project>https://github.com/wildfirebill-ai/hivestack</Project>
+  <Overview>Local-first AI agent & AIOps platform running fully offline on Tesla M40 (Maxwell CC 5.2). Single container with provider gate, RAG, MCP, workflows, AIOps, governance.</Overview>
+  <Category>Productivity:AITools</Category>
+  <WebUI>http://[IP]:[PORT:8080]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/wildfirebill-ai/hivestack/main/docker/hivestack-m40.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/wildfirebill-ai/hivestack/main/icon.png</Icon>
+  <MinVer>6.9</MinVer>
+  <MaxVer/>
   <Description>Local-first AI agent platform with a per-provider on/off gate, Web UI, and Tesla M40 (Maxwell) GPU support.
 
 Features
@@ -17,23 +25,68 @@ Features
 - M40-ready: CC 5.2 (Ollama/llama.cpp, driver branch 580)
 
 Parameters: set a strong admin password and (optionally) the GPU UUID.</Description>
-  <Registry>ghcr.io/wildfirebill-ai/hivestack</Registry>
-  <Repository>ghcr.io/wildfirebill-ai/hivestack:latest</Repository>
-  <Support>https://github.com/wildfirebill-ai/hivestack</Support>
-  <Beta>false</Beta>
-  <Requires>Nvidia</Requires>
-  <BaseVar>NAME</BaseVar>
-  <Privileged>false</Privileged>
-  <Icon>https://raw.githubusercontent.com/wildfirebill-ai/hivestack/main/icon.png</Icon>
-  <Overview>hivestack ships the Web UI, API, and offline AIOps loop in one container. Mount /config, /data, and /models for persistence; attach the M40 for local inference via the optional Ollama sidecar.</Overview>
-
+  <Networking>
+    <Mode>bridge</Mode>
+    <Publish>
+      <Port>
+        <HostPort/>
+        <ContainerPort>8080</ContainerPort>
+        <Protocol>tcp</Protocol>
+      </Port>
+    </Publish>
+  </Networking>
+  <Data>
+    <Volume>
+      <HostDir>/mnt/user/appdata/hivestack/config</HostDir>
+      <ContainerDir>/config</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+    <Volume>
+      <HostDir>/mnt/user/appdata/hivestack/data</HostDir>
+      <ContainerDir>/data</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+    <Volume>
+      <HostDir>/mnt/user/appdata/hivestack/models</HostDir>
+      <ContainerDir>/models</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+  </Data>
+  <Environment>
+    <Variable>
+      <Value/>
+      <Name>HIVESTACK_ADMIN_USER</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value/>
+      <Name>HIVESTACK_ADMIN_PASSWORD</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>all</Value>
+      <Name>NVIDIA_VISIBLE_DEVICES</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>compute,utility</Value>
+      <Name>NVIDIA_DRIVER_CAPABILITIES</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>http://hivestack-ollama:11434</Value>
+      <Name>HIVESTACK_OLLAMA_URL</Name>
+      <Mode/>
+    </Variable>
+  </Environment>
+  <Labels/>
   <Config Name="Web UI Port" Target="8080" Default="8080" Mode="tcp" Description="Web UI and API port" Type="Port" Display="always" Required="true" Mask="false"/>
-  <Config Name="Web UI URL" Target="WEB_UI_URL" Default="http://[IP]:[PORT:8080]" Description="Auto-generated Web UI access link" Type="Variable" Display="always" Required="false" Mask="false" Mode="ro"/>
   <Config Name="Config path" Target="/config" Default="/mnt/user/appdata/hivestack/config" Mode="rw" Description="Persistent config (config.yaml seeded on first boot)" Type="Path" Display="always" Required="true" Mask="false"/>
   <Config Name="Data path" Target="/data" Default="/mnt/user/appdata/hivestack/data" Mode="rw" Description="Persistent data (SQLite, logs)" Type="Path" Display="always" Required="true" Mask="false"/>
   <Config Name="Models path" Target="/models" Default="/mnt/user/appdata/hivestack/models" Mode="rw" Description="Model cache (Ollama models from Stage 2)" Type="Path" Display="always" Required="true" Mask="false"/>
-  <Config Name="Admin password" Target="HIVESTACK_ADMIN_PASSWORD" Default="changeme" Description="Web UI admin password (change me!)" Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Admin password" Target="HIVESTACK_ADMIN_PASSWORD" Default="changeme" Description="Web UI admin password (change me!)" Type="Variable" Display="always" Required="true" Mask="true"/>
   <Config Name="Admin user" Target="HIVESTACK_ADMIN_USER" Default="admin" Description="Web UI admin username" Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="GPU UUID(s)" Target="NVIDIA_VISIBLE_DEVICES" Default="all" Description="NVIDIA devices to expose ('all' = every GPU; or UUID list)" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="Ollama URL" Target="HIVESTACK_OLLAMA_URL" Default="http://hivestack-ollama:11434" Description="Ollama sidecar URL (docker-compose service name)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="Post Arguments" Target="POST_ARGS" Default="" Description="Optional extra args passed to uvicorn" Type="Variable" Display="advanced" Required="false" Mask="false"/>
-</XML>
+</Container>
