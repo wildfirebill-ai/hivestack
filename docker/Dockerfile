@@ -7,7 +7,7 @@ COPY web/ .
 RUN npm run build
 
 # ---- Stage 2: runtime (NVIDIA CUDA base with Python) -----------------------
-FROM nvidia/cuda:12.2.0-base-debian12 AS runtime
+FROM nvidia/cuda:12.2.0-base-ubuntu22.04 AS runtime
 
 # Install Python 3.12 + pip
 RUN apt-get update \
