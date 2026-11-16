@@ -1,6 +1,6 @@
 # Vulnerability scan report
 
-_Generated 2026-11-09 10:52 UTC_  
+_Generated 2026-11-16 10:34 UTC_  
 
 **Total findings: 3**
 _Breakdown — image: 3_
